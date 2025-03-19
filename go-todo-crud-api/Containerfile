@@ -1,5 +1,6 @@
 #--Stage 1
 FROM image-registry.openshift-image-registry.svc:5000/openshift/golang:latest as build-stage
+USER root
 RUN mkdir -p /config /app /bin
 COPY . /bin/. 
 ENV ARCH=${ARCH:-amd64}
@@ -14,4 +15,6 @@ COPY --from=build-stage /app /app/bin/.
 COPY --from=build-stage /bin/todo-api.properties /app/config/.
 RUN mv /app/bin/app-${ARCH} /app/bin/go-app
 WORKDIR /app
+chown -R 1001:0 /app
+USER 1001
 ENTRYPOINT [ "./bin/go-app" ]
