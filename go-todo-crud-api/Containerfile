@@ -8,6 +8,7 @@ WORKDIR /bin/
 RUN GOOS=linux GOARCH=${ARCH} go build -o /app/app-${ARCH} main.go
 #--Stage 2
 FROM image-registry.openshift-image-registry.svc:5000/openshift/golang:latest
+USER root
 RUN mkdir -p /app/config /app/bin
 ENV ARCH=${ARCH:-amd64}
 ENV CONFIG_PATH=/app/config
