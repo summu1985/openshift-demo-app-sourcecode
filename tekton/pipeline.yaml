@@ -1,0 +1,323 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  creationTimestamp: '2025-03-19T06:42:20Z'
+  generation: 23
+  managedFields:
+    - apiVersion: tekton.dev/v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:spec':
+          .: {}
+          'f:finally': {}
+          'f:params': {}
+          'f:tasks': {}
+          'f:workspaces': {}
+      manager: Mozilla
+      operation: Update
+      time: '2025-03-19T19:29:51Z'
+  name: java-builder-pipeline
+  namespace: pipelines-demo
+  resourceVersion: '274083'
+  uid: 5dcadf0f-60b0-4328-be23-e005ae41eb05
+spec:
+  params:
+    - default: users-backend
+      name: APP_NAME
+      type: string
+    - default: 'https://github.com/summu1985/openshift-demo-app-sourcecode.git'
+      name: APP_GIT_REPO
+      type: string
+    - default: main
+      name: GIT_REVISION
+      type: string
+    - default: pipelines-demo
+      name: PROJECT_NAME
+      type: string
+    - default: ./user-backend
+      name: PATH_CONTEXT
+      type: string
+    - default: flask-web-app
+      name: PYTHON_APP_NAME
+      type: string
+    - default: python-flask-web-app
+      name: PYTHON_PATH_CONTEXT
+      type: string
+  tasks:
+    - name: git-clone
+      params:
+        - name: url
+          value: $(params.APP_GIT_REPO)
+        - name: revision
+          value: $(params.GIT_REVISION)
+        - name: refspec
+          value: ''
+        - name: submodules
+          value: 'true'
+        - name: depth
+          value: '1'
+        - name: sslVerify
+          value: 'true'
+        - name: crtFileName
+          value: ca-bundle.crt
+        - name: subdirectory
+          value: ''
+        - name: sparseCheckoutDirectories
+          value: ''
+        - name: deleteExisting
+          value: 'true'
+        - name: httpProxy
+          value: ''
+        - name: httpsProxy
+          value: ''
+        - name: noProxy
+          value: ''
+        - name: verbose
+          value: 'true'
+        - name: gitInitImage
+          value: 'gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.40.2'
+        - name: userHome
+          value: /home/git
+      taskRef:
+        kind: Task
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+    - name: deploy-todo
+      params:
+        - name: SCRIPT
+          value: 'oc new-app --name go-todo-app --as-deployment-config image-registry.openshift-image-registry.svc:5000/$(params.PROJECT_NAME)/go-todo-app:dev'
+        - name: VERSION
+          value: latest
+      runAfter:
+        - cleanup-old-todo
+        - cleanup-old-webapp
+      taskRef:
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: openshift-client
+          - name: namespace
+            value: openshift-pipelines
+        resolver: cluster
+    - name: expose-todo-app
+      params:
+        - name: SCRIPT
+          value: oc expose dc go-todo-app --name todoapi --port 4100
+        - name: VERSION
+          value: latest
+      runAfter:
+        - deploy-todo
+        - deploy-web-app
+      taskRef:
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: openshift-client
+          - name: namespace
+            value: openshift-pipelines
+        resolver: cluster
+    - name: buildah
+      params:
+        - name: IMAGE
+          value: 'image-registry.openshift-image-registry.svc:5000/pipelines-demo/go-todo-app:dev'
+        - name: DOCKERFILE
+          value: ./Containerfile
+        - name: BUILD_ARGS
+          value: []
+        - name: CONTEXT
+          value: go-todo-crud-api
+        - name: STORAGE_DRIVER
+          value: vfs
+        - name: FORMAT
+          value: oci
+        - name: BUILD_EXTRA_ARGS
+          value: ''
+        - name: PUSH_EXTRA_ARGS
+          value: ''
+        - name: SKIP_PUSH
+          value: 'false'
+        - name: TLS_VERIFY
+          value: 'true'
+        - name: VERBOSE
+          value: 'false'
+      runAfter:
+        - git-clone
+      taskRef:
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: buildah
+          - name: namespace
+            value: openshift-pipelines
+        resolver: cluster
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+    - name: create-app-route
+      params:
+        - name: SCRIPT
+          value: oc expose service go-todo-app
+        - name: VERSION
+          value: latest
+      runAfter:
+        - expose-todo-app
+        - expose-web-app-svc
+      taskRef:
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: openshift-client
+          - name: namespace
+            value: openshift-pipelines
+        resolver: cluster
+    - name: build-web-app
+      params:
+        - name: IMAGE
+          value: 'image-registry.openshift-image-registry.svc:5000/$(params.PROJECT_NAME)/$(params.PYTHON_APP_NAME):dev'
+        - name: DOCKERFILE
+          value: ./Containerfile
+        - name: BUILD_ARGS
+          value: []
+        - name: CONTEXT
+          value: $(params.PYTHON_PATH_CONTEXT)
+        - name: STORAGE_DRIVER
+          value: vfs
+        - name: FORMAT
+          value: oci
+        - name: BUILD_EXTRA_ARGS
+          value: ''
+        - name: PUSH_EXTRA_ARGS
+          value: ''
+        - name: SKIP_PUSH
+          value: 'false'
+        - name: TLS_VERIFY
+          value: 'true'
+        - name: VERBOSE
+          value: 'false'
+      runAfter:
+        - git-clone
+      taskRef:
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: buildah
+          - name: namespace
+            value: openshift-pipelines
+        resolver: cluster
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+    - name: deploy-web-app
+      params:
+        - name: SCRIPT
+          value: 'oc new-app --name $(params.PYTHON_APP_NAME) --as-deployment-config image-registry.openshift-image-registry.svc:5000/$(params.PROJECT_NAME)/$(params.PYTHON_APP_NAME):dev'
+        - name: VERSION
+          value: latest
+      runAfter:
+        - cleanup-old-todo
+        - cleanup-old-webapp
+      taskRef:
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: openshift-client
+          - name: namespace
+            value: openshift-pipelines
+        resolver: cluster
+    - name: expose-web-app-svc
+      params:
+        - name: SCRIPT
+          value: oc expose dc $(params.PYTHON_APP_NAME)  --port 4100
+        - name: VERSION
+          value: latest
+      runAfter:
+        - fix-webapp-svc
+      taskRef:
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: openshift-client
+          - name: namespace
+            value: openshift-pipelines
+        resolver: cluster
+    - name: create-web-app-route
+      params:
+        - name: SCRIPT
+          value: oc expose service $(params.PYTHON_APP_NAME)
+        - name: VERSION
+          value: latest
+      runAfter:
+        - expose-todo-app
+        - expose-web-app-svc
+      taskRef:
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: openshift-client
+          - name: namespace
+            value: openshift-pipelines
+        resolver: cluster
+    - name: fix-webapp-svc
+      params:
+        - name: SCRIPT
+          value: oc delete svc $(params.PYTHON_APP_NAME)
+        - name: VERSION
+          value: latest
+      runAfter:
+        - deploy-todo
+        - deploy-web-app
+      taskRef:
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: openshift-client
+          - name: namespace
+            value: openshift-pipelines
+        resolver: cluster
+    - name: cleanup-old-todo
+      params:
+        - name: SCRIPT
+          value: oc delete all -l app=go-todo-app
+        - name: VERSION
+          value: latest
+      runAfter:
+        - buildah
+      taskRef:
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: openshift-client
+          - name: namespace
+            value: openshift-pipelines
+        resolver: cluster
+    - name: cleanup-old-webapp
+      params:
+        - name: SCRIPT
+          value: oc delete all -l app=$(params.PYTHON_APP_NAME)
+        - name: VERSION
+          value: latest
+      runAfter:
+        - build-web-app
+      taskRef:
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: openshift-client
+          - name: namespace
+            value: openshift-pipelines
+        resolver: cluster
+  workspaces:
+    - name: shared-workspace
