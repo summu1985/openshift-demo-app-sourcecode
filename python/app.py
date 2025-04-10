@@ -5,11 +5,11 @@ import time
 
 app = Flask(__name__)
 
-@app.route('/')
+@app.route('/',methods=['GET'])
 def hello():
     return "Hello from Flask!"
 
-@app.route('/metrics')
+@app.route('/metrics',methods=['GET'])
 def metrics():
     return f'custom_metric_1 {random.randint(0, 100)}\n'
 
