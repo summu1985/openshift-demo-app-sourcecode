@@ -2,10 +2,10 @@ FROM  image-registry.openshift-image-registry.svc:5000/openshift/python:3.12-ubi
 USER root
 RUN mkdir -p /flask
 WORKDIR /flask
-#RUN pip install --upgrade pip
-#COPY requirements.txt requirements.txt
+RUN pip install --upgrade pip
+COPY requirements.txt requirements.txt
 #COPY web-app-config.properties /config/web-app-config.properties
-#RUN pip3 install -r requirements.txt
+RUN pip3 install -r requirements.txt
 COPY . .
 RUN chown -R 1001:0 /flask
 EXPOSE 8080
