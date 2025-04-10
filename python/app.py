@@ -12,3 +12,6 @@ def hello():
 @app.route('/metrics')
 def metrics():
     return f'custom_metric_1 {random.randint(0, 100)}\n'
+
+if __name__ == "__main__":
+  app.run(debug=False,host="0.0.0.0", port=8080)
