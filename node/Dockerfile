@@ -2,7 +2,7 @@ FROM image-registry.openshift-image-registry.svc:5000/openshift/nodejs:18-minima
 USER root
 RUN mkdir -p /app
 WORKDIR /app
-COPY web-socket-server.js web-socket-server.js
+COPY . .
 RUN npm install express ws
 RUN chown -R 1001:0 /app
 EXPOSE 8080
