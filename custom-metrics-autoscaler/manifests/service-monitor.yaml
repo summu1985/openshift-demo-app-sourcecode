@@ -1,0 +1,14 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: demo-ws-server-monitor
+  labels:
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: demo-ws-server
+  endpoints:
+  - port: 8080-tcp
+    path: /metrics
+    interval: 15s
