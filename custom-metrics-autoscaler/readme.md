@@ -458,7 +458,7 @@ Stop the script and observe pods scale down one-by-one after every 60s.
 ^C
 Closing all WebSocket connections...
 curl http://$URL/metrics
-websocket_connection_count 200
+websocket_connection_count 0
 ```
 
 ![Screenshot 2025-04-15 at 13 33 36](https://github.com/user-attachments/assets/d4bb3aff-d49c-4022-8c36-6c412954d6b8)
