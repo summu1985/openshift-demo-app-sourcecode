@@ -1,0 +1,37 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: ws-server-scaled-object
+  namespace: custom-metric-autoscaler-demo
+spec:
+  scaleTargetRef:
+    #apiVersion: apps.openshift.io/v1
+    #kind: Deployment
+    name: demo-ws-server
+  minReplicaCount: 1
+  maxReplicaCount: 5
+  pollingInterval: 15
+  cooldownPeriod: 45
+  advanced:
+    #restoreToOriginalReplicaCount: false
+    horizontalPodAutoscalerConfig:
+      name: keda-hpa-scale-down
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 60
+          policies:
+          - type: Percent
+            value: 20
+            periodSeconds: 60
+  triggers:
+  - type: prometheus
+    metadata:
+      serverAddress: https://thanos-querier.openshift-monitoring.svc.cluster.local:9092
+      namespace: custom-metric-autoscaler-demo
+      metricName: websocket_connection_count
+      threshold: '40' 
+      query: sum(websocket_connection_count{namespace="custom-metric-autoscaler-demo"})
+      authModes: "bearer"
+    authenticationRef: 
+      name: keda-trigger-auth-prometheus
+      kind: TriggerAuthentication
