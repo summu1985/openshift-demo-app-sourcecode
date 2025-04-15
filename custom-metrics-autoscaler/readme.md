@@ -1,3 +1,4 @@
+![banner](https://github.com/user-attachments/assets/214ea3b5-e1e0-4964-9cfb-3ffa05d8bde3)
 
 🔄 **Auto-Scaling WebSocket Applications on OpenShift Using Custom Metrics with KEDA**
 
