@@ -464,7 +464,8 @@ websocket_connection_count 200
 ![Screenshot 2025-04-15 at 13 33 36](https://github.com/user-attachments/assets/d4bb3aff-d49c-4022-8c36-6c412954d6b8)
 
 
-![Screenshot 2025-04-14 at 21 40 02](https://github.com/user-attachments/assets/7ecd1636-b986-45cb-809a-be2dc6188965)
+![Screenshot 2025-04-15 at 13 37 02](https://github.com/user-attachments/assets/3dd79f30-687a-4543-9044-4be27aa591f0)
+
 
 
 🙌 Wrapping Up
